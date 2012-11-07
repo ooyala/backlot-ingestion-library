@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Example Ooyala Uploader</title>
+    <% ["jquery-1.8.2.min.js", "ooyala_uploader.js", "sample_driver.js"].each do |asset| %>
+      <%= js_url(asset) %>
+    <% end %>
+    <style>
+      #messages {
+        width: 450px;
+        height: 200px;
+        overflow-y: auto;
+      }
+    </style>
+    <script>
+      $(document).ready(function() {
+        SampleDriver.init();
+      });
+    </script>
+  </head>
+  <body>
+    <h1>Example Ooyala Uploader</h1>
+    Labels to assign<br>
+    Label paths must start with a slash and must not end with a slash
+    <div>
+      <textarea id="labelsText" cols="25" rows="7">/write/here/your/labels
+/on/each/line</textarea>
+    </div>
+    <br>
+    <label>Browse:</label>
+    <input id="myfile" name="myfile" type="file"/>
+    <br><br>
+    Log
+    <div id="messages"></div>
+  </body>
+</html>

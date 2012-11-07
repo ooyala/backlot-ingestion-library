@@ -1,0 +1,22 @@
+source :rubygems
+gem "sinatra"
+gem "json"
+gem "coffee-script"
+gem "rest-client"
+gem "pinion"
+
+group :development do
+  gem "pry"
+  # Rerun versions greater than 0.6.2 cause keyboard characters to be repeated in the console
+  # when you use ruby-debug or pry
+  gem "rerun", "=0.6.2"
+  gem "ruby-debug19"
+end
+
+group :test do
+  gem "colorize"
+  gem "watir"
+  gem "scope"
+  gem "minitest"
+  gem "remote_http_testing"
+end
