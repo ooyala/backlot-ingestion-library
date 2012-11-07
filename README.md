@@ -39,10 +39,10 @@ follows:
 
 The following events are recognized by the Backlot Uploader JavaScript Library:
 
-* **embedCodeReady**: Asset was created and an embed code is available. Callback parameter: `asset_id`.
-* **uploadProgress**: File upload in progress. Callback parameters: `asset_id`, `progressPercent`.
-* **uploadComplete**: Upload has completed. Callback parameter: `asset_id`.
-* **uploadError**: An error occurred during the upload process. Callback parameters: `asset_id`, `type`,
+* **embedCodeReady**: Asset was created and an embed code is available. Callback parameter: `assetID`.
+* **uploadProgress**: File upload in progress. Callback parameters: `assetID`, `progressPercent`.
+* **uploadComplete**: Upload has completed. Callback parameter: `assetID`.
+* **uploadError**: An error occurred during the upload process. Callback parameters: `assetID`, `type`,
   `fileName`, `statusCode`, `message`. The error parameter is a hash containing error messages.
 
 ## Methods
@@ -68,11 +68,11 @@ The `uploadFile` method takes in a file reference and an options hash. The possi
   Ooyala. The name of your URI should be specified in this variable. Ooyala recommends using the default here
   so you can pass a parameterized URL that includes the asset ID. Default: `"/v2/assets"`.
 * **assetStatusUpdateUrl**: URL on your signing server to update asset’s upload status. Corresponding Backlot
-  API is `[PUT] /v2/assets/asset_id/upload_status`.  Default: `"/v2/assets/asset_id/upload_status"`. The
-  string asset_id will be replaced for the actual id of the asset.
+  API is `[PUT] /v2/assets/assetID/upload_status`.  Default: `"/v2/assets/assetID/upload_status"`. The
+  string assetID will be replaced for the actual id of the asset.
 * **labelCreationUrl**: URL on your signing server for creating labels. Corresponding Backlot API is `[POST]
   /v2/labels/by_full_path/paths`. Default: `"/v2/labels/by_full_path/paths"`. The paths variable is a
   comma-delimited list of full path names for labels, including the leading slash, such as
   `/sports/baseball/giants` or `/sports/baseball/49er`
 * **labelAssignmentUrl**: URL on your signing server to assign labels to assets. Corresponding Backlot API is
-  `[POST] /v2/assets/asset_id/labels`. Default: `"/v2/assets/asset_id/labels"`.
+  `[POST] /v2/assets/assetID/labels`. Default: `"/v2/assets/assetID/labels"`.

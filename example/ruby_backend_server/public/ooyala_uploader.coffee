@@ -38,25 +38,25 @@ class window.OoyalaUploader
     ooyalaUploader.uploadFile(file, options)
     true
 
-  embedCodeReady: (assetId) =>
+  embedCodeReady: (assetID) =>
     for eventListener in (@eventListeners["embedCodeReady"] ? [])
-      eventListener(assetId)
+      eventListener(assetID)
 
-  uploadProgress: (assetId, progressPercent) =>
-    previousProgress = @chunkProgress[assetId]
+  uploadProgress: (assetID, progressPercent) =>
+    previousProgress = @chunkProgress[assetID]
     return if progressPercent is previousProgress
-    @chunkProgress[assetId] = progressPercent
+    @chunkProgress[assetID] = progressPercent
     for eventListener in (@eventListeners["uploadProgress"] ? [])
-      eventListener(assetId, progressPercent)
+      eventListener(assetID, progressPercent)
 
-  uploadComplete: (assetId) =>
-    delete @chunkProgress[assetId]
+  uploadComplete: (assetID) =>
+    delete @chunkProgress[assetID]
     for eventListener in (@eventListeners["uploadComplete"] ? [])
-      eventListener(assetId)
+      eventListener(assetID)
 
-  uploadError: (assetId, type, fileName, statusCode, message) =>
+  uploadError: (assetID, type, fileName, statusCode, message) =>
     for eventListener in (@eventListeners["uploadError"] ? [])
-      eventListener(assetId, type, fileName, statusCode, message)
+      eventListener(assetID, type, fileName, statusCode, message)
 
   browserSupported: FileReader?
 
@@ -73,15 +73,15 @@ class MovieUploader
 
   ###
   Placeholders in the urls are replaced dynamically when the http request is built
-  asset_id   -   is replaced with the actual id of the asset (embed code)
+  assetID   -   is replaced with the actual id of the asset (embed code)
   paths      -   is replaced with a comma separated list of labels, the ones that will be created
   ###
   uploadFile: (file, options) =>
     console.log("Uploading file using browser: #{navigator.userAgent}")
     @assetMetadata =
       assetCreationUrl: options.assetCreationUrl ? "/v2/assets"
-      assetUploadingUrl: options.assetUploadingUrl ? "/v2/assets/asset_id/uploading_urls"
-      assetStatusUpdateUrl: options.assetStatusUpdateUrl ? "/v2/assets/asset_id/upload_status"
+      assetUploadingUrl: options.assetUploadingUrl ? "/v2/assets/assetID/uploading_urls"
+      assetStatusUpdateUrl: options.assetStatusUpdateUrl ? "/v2/assets/assetID/upload_status"
       assetName: options.name ? file.name
       assetDescription : options.description ? ""
       assetType: options.assetType ? "video"
@@ -90,8 +90,8 @@ class MovieUploader
       assetLabels: options.labels ? []
       postProcessingStatus: options.postProcessingStatus ? "live"
       labelCreationUrl: options.labelCreationUrl ? "/v2/labels/by_full_path/paths"
-      labelAssignmentUrl: options.labelAssignmentUrl ? "/v2/assets/asset_id/labels"
-      assetId: ""
+      labelAssignmentUrl: options.labelAssignmentUrl ? "/v2/assets/assetID/labels"
+      assetID: ""
     @createAsset(file)
 
   createAsset: (file) =>
@@ -111,12 +111,12 @@ class MovieUploader
 
   onAssetCreated: (file, assetCreationResponse) =>
     parsedResponse = JSON.parse(assetCreationResponse)
-    @assetMetadata.assetId = parsedResponse.embed_code
+    @assetMetadata.assetID = parsedResponse.embed_code
     ###
     Note: It could take some time for the asset to be copied. Send the upload ready callback
     immediately so that the user has some UI indication that upload has started
     ###
-    @embedCodeReadyCallback(@assetMetadata.assetId)
+    @embedCodeReadyCallback(@assetMetadata.assetID)
     @assetMetadata.assetLabels.filter (arrayElement) -> arrayElement
     @createLabels() unless @assetMetadata.assetLabels.length is 0
     @getUploadingUrls(file)
@@ -133,7 +133,7 @@ class MovieUploader
     parsedLabelsResponse = JSON.parse(responseCreationLabels)
     labelIds = (label["id"] for label in parsedLabelsResponse)
     $.ajax
-      url: @assetMetadata.labelAssignmentUrl.replace("asset_id", @assetMetadata.assetId)
+      url: @assetMetadata.labelAssignmentUrl.replace("assetID", @assetMetadata.assetID)
       type: "POST"
       data: JSON.stringify(labelIds)
       success: (response) => @onLabelsAssigned(response)
@@ -144,9 +144,9 @@ class MovieUploader
 
   getUploadingUrls: (file) ->
     $.ajax
-      url: @assetMetadata.assetUploadingUrl.split("asset_id").join(@assetMetadata.assetId)
+      url: @assetMetadata.assetUploadingUrl.split("assetID").join(@assetMetadata.assetID)
       data:
-        asset_id: @assetMetadata.assetId
+        asset_id: @assetMetadata.assetID
       success: (response) =>
         @onUploadUrlsReceived(file, response)
       error: (response) =>
@@ -187,7 +187,7 @@ class MovieUploader
     Math.min(100, uploadedPercent)
 
   onChunkProgress: =>
-    @uploadProgressCallback(@assetMetadata.assetId, @progressPercent())
+    @uploadProgressCallback(@assetMetadata.assetID, @progressPercent())
 
   onChunkComplete: (event, chunkIndex) =>
     @completedChunks++
@@ -198,13 +198,13 @@ class MovieUploader
 
   onAssetUploadComplete: =>
     $.ajax
-      url: @assetMetadata.assetStatusUpdateUrl.split("asset_id").join(@assetMetadata.assetId)
+      url: @assetMetadata.assetStatusUpdateUrl.split("assetID").join(@assetMetadata.assetID)
       data:
-        asset_id: @assetMetadata.assetId
+        asset_id: @assetMetadata.assetID
         status: "uploaded"
       type: "PUT"
       success: (data) =>
-        @uploadCompleteCallback(@assetMetadata.assetId)
+        @uploadCompleteCallback(@assetMetadata.assetID)
       error: (response) =>
         @onError(response, "Setting asset status as uploaded error")
 
@@ -217,7 +217,7 @@ class MovieUploader
 
     console.log("#{@assetMetadata.assetName}: #{clientMessage} with status #{response.status}: #{errorMessage}")
     @uploadErrorCallback
-      asset_id:     @assetMetadata.assetId
+      assetID:     @assetMetadata.assetID
       type:         @assetMetadata.assetType
       fileName:     @assetMetadata.assetName
       statusCode:   response.status
@@ -235,7 +235,7 @@ class ChunkUploader
     @bytesUploaded = 0
 
   startUpload: =>
-    console.log("#{@assetMetadata.assetId}: Starting upload of chunk #{@chunkIndex}")
+    console.log("#{@assetMetadata.assetID}: Starting upload of chunk #{@chunkIndex}")
     @xhr = new XMLHttpRequest()
     @xhr.upload.addEventListener("progress", (event) =>
       @bytesUploaded = event.loaded
@@ -260,9 +260,9 @@ class ChunkUploader
   ###
   onXhrError: (xhr) =>
     status = xhr.target.status
-    console.log("#{@assetMetadata.assetId}: chunk #{@chunkIndex}: Xhr Error Status #{status}")
+    console.log("#{@assetMetadata.assetID}: chunk #{@chunkIndex}: Xhr Error Status #{status}")
     @uploadErrorCallback
-      asset_id:     @assetMetadata.assetId
+      assetID:     @assetMetadata.assetID
       type:         @assetMetadata.assetType
       fileName:     @assetMetadata.assetName
       statusCode:   xhr.status

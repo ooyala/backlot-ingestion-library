@@ -32,18 +32,18 @@ class window.SampleDriver
     options = labels: $("#labelsText").val().split("\n")
     @display("Browser does not support HTML5 file uploads") unless @ooyalaUploader.uploadFile(file, options)
 
-  @embedCodeReady: (assetId) =>
-    @display("#{assetId}: Ready")
+  @embedCodeReady: (assetID) =>
+    @display("#{assetID}: Ready")
 
-  @uploadProgress: (assetId, progressPercent) =>
-    @display("#{assetId}: Progress #{progressPercent}%")
+  @uploadProgress: (assetID, progressPercent) =>
+    @display("#{assetID}: Progress #{progressPercent}%")
 
-  @uploadComplete: (assetId) =>
-    @display("#{assetId}: Completed")
+  @uploadComplete: (assetID) =>
+    @display("#{assetID}: Completed")
 
   ###
   The received errorHash has the following parameters:
-    assetId, type, fileName, statusCode, message
+    assetID, type, fileName, statusCode, message
   ###
   @uploadError: (errorHash) =>
     @display("#{errorHash.fileName} upload failed with status #{errorHash.statusCode}. #{errorHash.message}")
