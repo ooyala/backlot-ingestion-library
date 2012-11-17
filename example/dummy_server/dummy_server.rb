@@ -1,3 +1,6 @@
+# This server simulates a basic version of the Ooyala V2 Upload APIs. It can be used to test the
+# backlot ingestion library without hitting the actual Backlot APIs
+
 require "rubygems"
 require "sinatra/base"
 require "json"

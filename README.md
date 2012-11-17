@@ -25,8 +25,7 @@ should not be exposed to the client browser, the library requires a server that:
 * Forwards the request to Ooyala's API service.
 
 No signing server is needed for the actual uploading  of files or chunks. For a video, the client receives the
-URLs for uploading directly from the Ooyala API and directly posts to to those URLs on the Ooyala service. The
-`examples` directory of the library includes a reference server implementation.
+URLs for uploading directly from the Ooyala API and directly posts to to those URLs on the Ooyala service.
 
 ## Initialization
 
@@ -76,3 +75,21 @@ The `uploadFile` method takes in a file reference and an options hash. The possi
   `/sports/baseball/giants` or `/sports/baseball/49er`
 * **labelAssignmentUrl**: URL on your signing server to assign labels to assets. Corresponding Backlot API is
   `[POST] /v2/assets/assetID/labels`. Default: `"/v2/assets/assetID/labels"`.
+
+## Getting Started
+
+### API Dummy Server
+The examples directory contains a dummy server that simulates a basic version of the Ooyala V2 APIs that
+can be used for testing.
+To run the server,
+
+    $ bundle install
+    $ bin/rerun_dummy_server.sh
+
+### Ruby Backend Server
+The ruby_backend_server in the examples directory has a reference server implementation. To run the server,
+
+    $ bundle install
+    $ bin/rerun_uploader_server.sh
+    $ Point your browser to http://localhost:7081/
+
