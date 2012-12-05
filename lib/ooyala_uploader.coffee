@@ -95,7 +95,7 @@ class MovieUploader
     @createAsset(file)
 
   createAsset: (file) =>
-    $.ajax
+    jQuery.ajax
       url: @assetMetadata.assetCreationUrl
       type: "POST"
       data:
@@ -123,7 +123,7 @@ class MovieUploader
 
   createLabels: ->
     listOfLabels = @assetMetadata.assetLabels.join(",")
-    $.ajax
+    jQuery.ajax
       url: @assetMetadata.labelCreationUrl.replace("paths", listOfLabels)
       type: "POST"
       success: (response) => @assignLabels(response)
@@ -132,7 +132,7 @@ class MovieUploader
   assignLabels: (responseCreationLabels) ->
     parsedLabelsResponse = JSON.parse(responseCreationLabels)
     labelIds = (label["id"] for label in parsedLabelsResponse)
-    $.ajax
+    jQuery.ajax
       url: @assetMetadata.labelAssignmentUrl.replace("assetID", @assetMetadata.assetID)
       type: "POST"
       data: JSON.stringify(labelIds)
@@ -143,7 +143,7 @@ class MovieUploader
     console.log("Creation and assignment of labels complete #{@assetMetadata.assetLabels}")
 
   getUploadingUrls: (file) ->
-    $.ajax
+    jQuery.ajax
       url: @assetMetadata.assetUploadingUrl.split("assetID").join(@assetMetadata.assetID)
       data:
         asset_id: @assetMetadata.assetID
@@ -163,7 +163,7 @@ class MovieUploader
     if chunks.length isnt @totalChunks
       console.log("Sliced chunks (#{chunks.length}) and uploadingUrls (#{@totalChunks}) disagree.")
 
-    $.each(chunks, (index, chunk) =>
+    jQuery.each(chunks, (index, chunk) =>
       return if index in @completedChunkIndexes
       chunkUploader = new ChunkUploader
         assetMetadata: @assetMetadata
@@ -197,7 +197,7 @@ class MovieUploader
     @onAssetUploadComplete() if @completedChunks is @totalChunks
 
   onAssetUploadComplete: =>
-    $.ajax
+    jQuery.ajax
       url: @assetMetadata.assetStatusUpdateUrl.split("assetID").join(@assetMetadata.assetID)
       data:
         asset_id: @assetMetadata.assetID
