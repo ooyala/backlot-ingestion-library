@@ -84,7 +84,7 @@ can be used for testing.
 To run the server,
 
     $ bundle install
-    $ bin/rerun_dummy_server.sh
+    $ API_KEY="YourAPIKey" SECRET="YourSecret" V2_API_URL="http://api.ooyala.com" ooyala_api_bin/rerun_dummy_server.sh
 
 ### Ruby Backend Server
 The ruby_backend_server in the examples directory has a reference server implementation. To run the server,
