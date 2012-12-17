@@ -1,1 +1,1 @@
-../../../lib/ooyala_uploader.coffee
+../../../ooyala_uploader.coffee
