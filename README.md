@@ -78,18 +78,18 @@ The `uploadFile` method takes in a file reference and an options hash. The possi
 
 ## Getting Started
 
+### Sample Implementation
+The ruby_backend_server in the examples directory has an example implementation of the library in Ruby. To run the server,
+
+    $ bundle install
+    $ API_KEY="YourAPIKey" SECRET="YourSecret" V2_API_URL="http://api.ooyala.com" bin/rerun_uploader_server.sh
+    $ Point your browser to http://localhost:7081/
+
 ### API Dummy Server
 The examples directory contains a dummy server that simulates a basic version of the Ooyala V2 APIs that
 can be used for testing.
 To run the server,
 
     $ bundle install
-    $ API_KEY="YourAPIKey" SECRET="YourSecret" V2_API_URL="http://api.ooyala.com" bin/rerun_uploader_server.sh
-
-### Ruby Backend Server
-The ruby_backend_server in the examples directory has a reference server implementation. To run the server,
-
-    $ bundle install
-    $ bin/rerun_uploader_server.sh
-    $ Point your browser to http://localhost:7081/
+    $ bin/rerun_dummy_server.sh
 
