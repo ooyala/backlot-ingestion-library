@@ -76,7 +76,7 @@ class MovieUploader
   assetID   -   is replaced with the actual id of the asset (embed code)
   paths      -   is replaced with a comma separated list of labels, the ones that will be created
   ###
-  uploadFile: (file, options) =>
+  uploadFile: (@file, options) =>
     console.log("Uploading file using browser: #{navigator.userAgent}")
     @assetMetadata =
       assetCreationUrl: options.assetCreationUrl ? "/v2/assets"
@@ -92,9 +92,9 @@ class MovieUploader
       labelCreationUrl: options.labelCreationUrl ? "/v2/labels/by_full_path/paths"
       labelAssignmentUrl: options.labelAssignmentUrl ? "/v2/assets/assetID/labels"
       assetID: ""
-    @createAsset(file)
+    @createAsset()
 
-  createAsset: (file) =>
+  createAsset: =>
     jQuery.ajax
       url: @assetMetadata.assetCreationUrl
       type: "POST"
@@ -106,10 +106,10 @@ class MovieUploader
         asset_type: @assetMetadata.assetType
         chunk_size: CHUNK_SIZE
         post_processing_status: @assetMetadata.postProcessingStatus
-      success: (response) => @onAssetCreated(file, response)
+      success: (response) => @onAssetCreated(response)
       error: (response) => @onError(response, "Asset creation error")
 
-  onAssetCreated: (file, assetCreationResponse) =>
+  onAssetCreated: (assetCreationResponse) =>
     parsedResponse = JSON.parse(assetCreationResponse)
     @assetMetadata.assetID = parsedResponse.embed_code
     ###
@@ -119,7 +119,7 @@ class MovieUploader
     @embedCodeReadyCallback(@assetMetadata.assetID)
     @assetMetadata.assetLabels.filter (arrayElement) -> arrayElement
     @createLabels() unless @assetMetadata.assetLabels.length is 0
-    @getUploadingUrls(file)
+    @getUploadingUrls()
 
   createLabels: ->
     listOfLabels = @assetMetadata.assetLabels.join(",")
@@ -142,23 +142,23 @@ class MovieUploader
   onLabelsAssigned: (responseAssignLabels) ->
     console.log("Creation and assignment of labels complete #{@assetMetadata.assetLabels}")
 
-  getUploadingUrls: (file) ->
+  getUploadingUrls: ->
     jQuery.ajax
       url: @assetMetadata.assetUploadingUrl.split("assetID").join(@assetMetadata.assetID)
       data:
         asset_id: @assetMetadata.assetID
       success: (response) =>
-        @onUploadUrlsReceived(file, response)
+        @onUploadUrlsReceived(response)
       error: (response) =>
         @onError(response, "Error getting the uploading urls")
 
   ###
   Uploading all chunks
   ###
-  onUploadUrlsReceived: (file, uploadingUrlsResponse) =>
+  onUploadUrlsReceived: (uploadingUrlsResponse) =>
     parsedUploadingUrl = JSON.parse(uploadingUrlsResponse)
     @totalChunks = parsedUploadingUrl.length
-    chunks = new FileSplitter(file, CHUNK_SIZE).getChunks()
+    chunks = new FileSplitter(@file, CHUNK_SIZE).getChunks()
 
     if chunks.length isnt @totalChunks
       console.log("Sliced chunks (#{chunks.length}) and uploadingUrls (#{@totalChunks}) disagree.")
