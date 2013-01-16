@@ -7,13 +7,41 @@ ENTITY_MAP =
   "/": "&#x2F;"
 
 class window.SampleDriver
+  ###
+  Switch between the HTML5 Upload and Flash Upload based on browser capability
+  ###
   @init: =>
-    $("#myfile").change(@handleFileSelect)
-    @ooyalaUploader = new OoyalaUploader
-      embedCodeReady: @embedCodeReady
-      uploadProgress: @uploadProgress
-      uploadComplete: @uploadComplete
-      uploadError: @uploadError
+    if FileReader?
+      $("#flashInputButton").hide()
+      $("#html5InputFile").change(@handleFileSelect)
+      @ooyalaUploader = new OoyalaUploader
+        embedCodeReady: @embedCodeReady
+        uploadProgress: @uploadProgress
+        uploadComplete: @uploadComplete
+        uploadError: @uploadError
+        uploaderType: "HTML5"
+    else
+      $("#html5InputFile").hide()
+      @initSWFUploader()
+      @ooyalaUploader = new OoyalaUploader
+        embedCodeReady: @embedCodeReady
+        uploadProgress: @uploadProgress
+        uploadComplete: @uploadComplete
+        uploadError: @uploadError
+        uploaderType: "Flash"
+        swfUploader: @swfUploader
+
+  @initSWFUploader: =>
+    settingsObject =
+      file_queue_limit: 1
+      file_upload_limit: 1
+      file_dialog_complete_handler: @handleFlashFileSelect
+      flash_url: "http://localhost:7081/swfupload.swf"
+      button_placeholder_id: "flashInputButton"
+      button_image_url : "BrowseButton.png"
+      button_height: 22
+      button_width: 61
+    @swfUploader = new SWFUpload(settingsObject);
 
   @display: (message) =>
     $("#messages").append("<div>#{@escapeHTML(message)}</div>")
@@ -31,6 +59,10 @@ class window.SampleDriver
     file = event.target.files[0]
     options = labels: $("#labelsText").val().split("\n")
     @display("Browser does not support HTML5 file uploads") unless @ooyalaUploader.uploadFile(file, options)
+
+  @handleFlashFileSelect: (numFilesSelected, numFilesQueued, numFilesInQueue) =>
+    options = labels: $("#labelsText").val().split("\n")
+    @ooyalaUploader.uploadFileUsingFlash(options)
 
   @embedCodeReady: (assetID) =>
     @display("#{assetID}: Ready")

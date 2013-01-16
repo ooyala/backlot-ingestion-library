@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Example Ooyala Uploader</title>
-    <% ["jquery-1.8.2.min.js", "ooyala_uploader.js", "sample_driver.js"].each do |asset| %>
+    <% ["jquery-1.8.2.min.js", "ooyala_uploader.js", "sample_driver.js", "swfupload.js"].each do |asset| %>
       <%= js_url(asset) %>
     <% end %>
     <style>
@@ -28,7 +28,8 @@
     </div>
     <br>
     <label>Browse:</label>
-    <input id="myfile" name="myfile" type="file"/>
+    <input id="html5InputFile" type="file"/>
+    <input id="flashInputButton" type="button">
     <br><br>
     Log
     <div id="messages"></div>
