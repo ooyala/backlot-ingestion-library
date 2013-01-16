@@ -6,6 +6,12 @@ class window.OoyalaUploader
     @chunkProgress = {}
     @eventListeners = {}
     @initializeListeners(options)
+    @uploaderType = options?.uploaderType ? "HTML5"
+    throw "uploaderType must be either HTML5 or Flash" unless @uploaderType in ["Flash", "HTML5"]
+    if @uploaderType is "Flash"
+      unless options?.swfUploader?
+        throw new Error("a reference to the SWFUpload object is required for Flash uploads")
+      @swfUploader = options.swfUploader
 
   initializeListeners: (options) ->
     for eventType in ["embedCodeReady", "uploadProgress", "uploadComplete", "uploadError"]
@@ -16,7 +22,7 @@ class window.OoyalaUploader
       @eventListeners[eventType] = listeners
 
   on: (eventType, eventListener) =>
-    throw "invalid eventType" unless @eventListeners[eventType]?
+    throw new Error("invalid eventType") unless @eventListeners[eventType]?
     @eventListeners[eventType].push(eventListener)
 
   off: (eventType, eventListener=null) =>
@@ -29,13 +35,14 @@ class window.OoyalaUploader
       listeners.splice(index, 1)
 
   uploadFile: (file, options={}) =>
-    return false unless @browserSupported
-    ooyalaUploader = new MovieUploader
+    return false unless @html5UploadSupported
+    movieUploader = new MovieUploader
       embedCodeReady: @embedCodeReady
       uploadProgress: @uploadProgress
       uploadComplete: @uploadComplete
       uploadError: @uploadError
-    ooyalaUploader.uploadFile(file, options)
+      uploaderType: @uploaderType
+    movieUploader.uploadFile(file, options)
     true
 
   embedCodeReady: (assetID) =>
@@ -58,7 +65,19 @@ class window.OoyalaUploader
     for eventListener in (@eventListeners["uploadError"] ? [])
       eventListener(assetID, type, fileName, statusCode, message)
 
-  browserSupported: FileReader?
+  uploadFileUsingFlash: (options={}) =>
+    throw new Error("uploaderType must be Flash to call this method") unless @uploaderType is "Flash"
+    movieUploader = new MovieUploader
+      embedCodeReady: @embedCodeReady
+      uploadProgress: @uploadProgress
+      uploadComplete: @uploadComplete
+      uploadError: @uploadError
+      uploaderType: @uploaderType
+      swfUploader: @swfUploader
+    movieUploader.uploadFileUsingFlash(options)
+    true
+
+  html5UploadSupported: FileReader?
 
 class MovieUploader
   constructor: (options) ->
@@ -66,6 +85,8 @@ class MovieUploader
     @uploadProgressCallback = options?.uploadProgress ? ->
     @uploadCompleteCallback = options?.uploadComplete ? ->
     @uploadErrorCallback = options?.uploadError ? ->
+    @uploaderType = options?.uploaderType ? "HTML5"
+    @swfUploader = options.swfUploader if @uploaderType is "Flash"
     @chunkUploaders = {}
     @completedChunkIndexes = []
     @completedChunks = 0
@@ -78,34 +99,53 @@ class MovieUploader
   ###
   uploadFile: (@file, options) =>
     console.log("Uploading file using browser: #{navigator.userAgent}")
+    @setAssetMetadata(options)
+    @assetMetadata.assetName ?= @file.name
+    @assetMetadata.fileSize = @file.size
+    @assetMetadata.fileName = @file.name
+    @createAsset()
+
+  uploadFileUsingFlash: (options) =>
+    file = @swfUploader.getFile(0)
+    throw new Error("Flash Upload: No Files Queued") unless file?
+    @setAssetMetadata(options)
+    @assetMetadata.assetName ?= file.name
+    @assetMetadata.fileSize = file.size
+    @assetMetadata.fileName = file.name
+    @swfUploader.settings["upload_success_handler"] = @onFlashUploadSuccess
+    @swfUploader.settings["upload_progress_handler"] = @onFlashUploadProgress
+    @swfUploader.settings["upload_error_handler"] = @onFlashUploadError
+    @createAsset()
+
+  setAssetMetadata: (options) =>
     @assetMetadata =
       assetCreationUrl: options.assetCreationUrl ? "/v2/assets"
       assetUploadingUrl: options.assetUploadingUrl ? "/v2/assets/assetID/uploading_urls"
       assetStatusUpdateUrl: options.assetStatusUpdateUrl ? "/v2/assets/assetID/upload_status"
-      assetName: options.name ? file.name
+      assetName: options.name
       assetDescription : options.description ? ""
       assetType: options.assetType ? "video"
-      fileSize: file.size
       createdAt: new Date().getTime()
       assetLabels: options.labels ? []
       postProcessingStatus: options.postProcessingStatus ? "live"
       labelCreationUrl: options.labelCreationUrl ? "/v2/labels/by_full_path/paths"
       labelAssignmentUrl: options.labelAssignmentUrl ? "/v2/assets/assetID/labels"
       assetID: ""
-    @createAsset()
 
   createAsset: =>
+    postData =
+      name: @assetMetadata.assetName
+      description: @assetMetadata.assetDescription
+      file_name: @assetMetadata.fileName
+      file_size: @assetMetadata.fileSize
+      asset_type: @assetMetadata.assetType
+      post_processing_status: @assetMetadata.postProcessingStatus
+    postData.chunk_size = CHUNK_SIZE if @uploaderType is "HTML5"
+
     jQuery.ajax
       url: @assetMetadata.assetCreationUrl
       type: "POST"
-      data:
-        name: @assetMetadata.assetName
-        description: @assetMetadata.assetDescription
-        file_name: file.name
-        file_size: @assetMetadata.fileSize
-        asset_type: @assetMetadata.assetType
-        chunk_size: CHUNK_SIZE
-        post_processing_status: @assetMetadata.postProcessingStatus
+      data: postData
       success: (response) => @onAssetCreated(response)
       error: (response) => @onError(response, "Asset creation error")
 
@@ -158,11 +198,15 @@ class MovieUploader
   onUploadUrlsReceived: (uploadingUrlsResponse) =>
     parsedUploadingUrl = JSON.parse(uploadingUrlsResponse)
     @totalChunks = parsedUploadingUrl.length
-    chunks = new FileSplitter(@file, CHUNK_SIZE).getChunks()
+    if @uploaderType is "HTML5"
+      @startHTML5Upload(parsedUploadingUrl)
+    else
+      @startFlashUpload(parsedUploadingUrl)
 
+  startHTML5Upload: (parsedUploadingUrl) =>
+    chunks = new FileSplitter(@file, CHUNK_SIZE).getChunks()
     if chunks.length isnt @totalChunks
       console.log("Sliced chunks (#{chunks.length}) and uploadingUrls (#{@totalChunks}) disagree.")
-
     jQuery.each(chunks, (index, chunk) =>
       return if index in @completedChunkIndexes
       chunkUploader = new ChunkUploader
@@ -176,6 +220,26 @@ class MovieUploader
       @chunkUploaders[index] = chunkUploader
       chunkUploader.startUpload()
     )
+
+  startFlashUpload: (parsedUploadingUrl) =>
+    @swfUploader.setUploadURL(parsedUploadingUrl[0])
+    @swfUploader.startUpload()
+
+  onFlashUploadProgress: (file, completedBytes, totalBytes) =>
+    uploadedPercent = Math.floor((completedBytes * 100) / totalBytes)
+    uploadedPercent = Math.min(100, uploadedPercent)
+    @uploadProgressCallback(@assetMetadata.assetID, uploadedPercent)
+
+  onFlashUploadComplete: (file, serverData, receivedResponse) =>
+    @onAssetUploadComplete()
+
+  onFlashUploadError: (file, errorCode, errorMessage) =>
+    @uploadErrorCallback
+      assetID:     @assetMetadata.assetID
+      type:         @assetMetadata.assetType
+      fileName:     @assetMetadata.assetName
+      statusCode:   errorCode
+      message:      errorMessage
 
   progressPercent: ->
     bytesUploadedByInProgressChunks = 0
