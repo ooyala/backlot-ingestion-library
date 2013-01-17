@@ -3,11 +3,21 @@
 ## Overview
 
 The Ooyala Backlot Uploader JavaScript library is an easy way to integrate with Ooyala's ingestion application
-programming interface (API). It uses the HTML5 File API to chunk a file in the client and upload the chunks
-to Ooyala's servers.
+programming interface (API). It supports two ways to upload video files:
 
-Because the library uses the HTML5 File APIs to chunk files, it requires a browser that supports the File
-APIs. Supported browsers are Firefox 15+, Chrome 22+, Safari 6+, and IE with the ChromeFrame plugin.
+* Chunked upload using the HTML5 APIs
+
+    By default, it uses the HTML5 File API to chunk a file in the client and upload the chunks to Ooyala's
+    servers. This requires a browser that supports the File APIs. Supported browsers are Firefox 15+, Chrome
+    22+, Safari 6+, and IE with the ChromeFrame plugin.
+    This is the recommended approach, particularly for large files, since a failed request only involves
+    retrying that chunk rather than the entire file. It also boosts upload speed since multiple chunks can be
+    uploaded in parallel.
+
+* Single-chunk upload using a Flash SWF
+
+    For older browsers that do not support the File API, the library uses a flash swf from the
+    [swfUpload](http://code.google.com/p/swfupload/) library to upload the file in a single chunk.
 
 ## Reference
 
@@ -25,7 +35,7 @@ should not be exposed to the client browser, the library requires a server that:
 * Forwards the request to Ooyala's API service.
 
 No signing server is needed for the actual uploading  of files or chunks. For a video, the client receives the
-URLs for uploading directly from the Ooyala API and directly posts to to those URLs on the Ooyala service.
+URLs for uploading from the Ooyala API and directly posts to those URLs.
 
 ## Initialization
 
@@ -33,6 +43,8 @@ The Ooyala uploader is initialized with a configuration hash. The possible confi
 follows:
 
 * **event: callback**:  Callback functions for each of the supported events described in the next section.
+* **uploaderType**: Type of uploader. Valid Values: `"HTML5"` | `"Flash"`. Default: `"HTML5"`.
+* **swfUploader**: Reference to the swfUploader object. Only required if uploaderType is "Flash"
 
 ## Events
 
@@ -49,10 +61,14 @@ The following events are recognized by the Backlot Uploader JavaScript Library:
 The Backlot Uploader JavaScript Library includes the following methods.
 
 * **.on(event, callback)**: Add a callback function for any of the uploader events.
-* **.uploadFile(file, options)**: The `uploadFile` method requires a reference to a file and can include the
-  `options` hash, described below.
+* **.uploadFile(file, options)**: The `uploadFile` method using the HTML5 File APIs to upload the asset in
+  chunks. It requires a reference to a file and can include the `options` hash, described below.
+* **.uploadFileUsingFlash(options)**: The `uploadFileUsingFlash` method uses the swfUpload library to upload
+ the asset in a single chunk. To use this method, the page must contain an initialized swfUpload swf.
+ The `options` hash is described below
 
-## uploadFile Options
+
+## Options hash for uploadFile and uploadFileUsingFlash
 
 The `uploadFile` method takes in a file reference and an options hash. The possible options are:
 
@@ -76,18 +92,109 @@ The `uploadFile` method takes in a file reference and an options hash. The possi
 * **labelAssignmentUrl**: URL on your signing server to assign labels to assets. Corresponding Backlot API is
   `[POST] /v2/assets/assetID/labels`. Default: `"/v2/assets/assetID/labels"`.
 
+
+## Using the HTML5 Uploader
+
+On page load, create a new instance of the OoyalaUploader. When a file input change event is called, invoke
+the uploadFile method with the desired options hash. The following is a stripped-down version of the
+SampleDriver class in sample_driver.coffee
+
+    window.SampleDriver = (function() {
+      function SampleDriver() {}
+
+      SampleDriver.init = function() {
+        $("#html5InputFile").change(SampleDriver.handleFileSelect);
+        return SampleDriver.ooyalaUploader = new OoyalaUploader({
+          uploadComplete: SampleDriver.uploadComplete,
+          uploaderType: "HTML5"
+        });
+      };
+
+      SampleDriver.handleFileSelect = function(event) {
+        var file, options;
+        file = event.target.files[0];
+        options = {
+          name: "Sample Name",
+          labels: ["/label1"]
+        };
+        return SampleDriver.ooyalaUploader.uploadFile(file, options);
+      };
+
+      SampleDriver.uploadComplete = function(assetID) {
+        return console.log("" + assetID + " Upload Completed");
+      };
+
+      return SampleDriver;
+
+    }).call(this);
+
+
+## Using the Flash Uploader
+
+For browsers without the File API, the swfUpload flash file should be embedded on the page. The swfUpload
+[documentation](http://demo.swfupload.org/Documentation/#settingsobject) shows the different ways the flash
+button can be styled.
+
+OoyalaUploader must only be initialized after the swfUpload file has been loaded. The following is a stripped-down version of the SampleDriver class in sample_driver.coffee
+
+
+    window.SampleDriver = (function() {
+      function SampleDriver() {}
+
+      SampleDriver.init = function() {
+        SampleDriver.initSWFUploader();
+        return SampleDriver.ooyalaUploader = new OoyalaUploader({
+          uploadComplete: SampleDriver.uploadComplete,
+          uploaderType: "Flash",
+          swfUploader: SampleDriver.swfUploader
+        });
+      };
+
+      SampleDriver.initSWFUploader = function() {
+        var settingsObject;
+        settingsObject = {
+          file_queue_limit: 1,
+          file_upload_limit: 1,
+          file_dialog_complete_handler: SampleDriver.handleFlashFileSelect,
+          flash_url: "http://localhost:7081/swfupload.swf",
+          button_placeholder_id: "flashInputButton",
+          button_image_url: "BrowseButton.png",
+          button_height: 22,
+          button_width: 61
+        };
+        return SampleDriver.swfUploader = new SWFUpload(settingsObject);
+      };
+
+      SampleDriver.handleFlashFileSelect = function(numFilesSelected, numFilesQueued, numFilesInQueue) {
+        var options;
+        options = {
+          name: "Sample Name",
+          labels: ["/label1"]
+        };
+        return SampleDriver.ooyalaUploader.uploadFileUsingFlash(options);
+      };
+
+      SampleDriver.uploadComplete = function(assetID) {
+        return console.log("" + assetID + ": Upload Completed");
+      };
+
+      return SampleDriver;
+
+    }).call(this);
+
+
 ## Getting Started
 
 ### Sample Implementation
-The ruby_backend_server in the examples directory has an example implementation of the library in Ruby. To run the server,
+The ruby_backend_server in the examples directory has a sample implementation of the library in Ruby. To run the server,
 
     $ bundle install
     $ API_KEY="YourAPIKey" SECRET="YourSecret" V2_API_URL="http://api.ooyala.com" bin/rerun_uploader_server.sh
     $ Point your browser to http://localhost:7081/
 
 ### API Dummy Server
-The examples directory contains a dummy server that simulates a basic version of the Ooyala V2 APIs that
-can be used for testing.
+The examples directory contains a dummy server that simulates a basic version of the Ooyala V2 APIs for
+testing.
 To run the server,
 
     $ bundle install
