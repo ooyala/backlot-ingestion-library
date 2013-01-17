@@ -32,7 +32,7 @@ class window.SampleDriver
         swfUploader: @swfUploader
 
   @initSWFUploader: =>
-    settingsObject =
+    @swfUploader = new SWFUpload
       file_queue_limit: 1
       file_upload_limit: 1
       file_dialog_complete_handler: @handleFlashFileSelect
@@ -41,7 +41,6 @@ class window.SampleDriver
       button_image_url : "BrowseButton.png"
       button_height: 35
       button_width: 75
-    @swfUploader = new SWFUpload(settingsObject);
 
   @display: (message) =>
     $("#messages").append("<div>#{@escapeHTML(message)}</div>")
