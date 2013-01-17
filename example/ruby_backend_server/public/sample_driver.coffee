@@ -38,9 +38,9 @@ class window.SampleDriver
       file_dialog_complete_handler: @handleFlashFileSelect
       flash_url: "http://localhost:7081/swfupload.swf"
       button_placeholder_id: "flashInputButton"
-      button_image_url : "BrowseButton.png"
-      button_height: 35
-      button_width: 75
+      button_image_url : "XPButtonUploadText_61x22.png"
+      button_height: 22
+      button_width: 61
 
   @display: (message) =>
     $("#messages").append("<div>#{@escapeHTML(message)}</div>")
