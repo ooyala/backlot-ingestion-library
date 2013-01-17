@@ -39,8 +39,8 @@ class window.SampleDriver
       flash_url: "http://localhost:7081/swfupload.swf"
       button_placeholder_id: "flashInputButton"
       button_image_url : "BrowseButton.png"
-      button_height: 22
-      button_width: 61
+      button_height: 35
+      button_width: 75
     @swfUploader = new SWFUpload(settingsObject);
 
   @display: (message) =>
