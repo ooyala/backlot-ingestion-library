@@ -11,9 +11,12 @@
   window.OoyalaUploader = (function() {
 
     function OoyalaUploader(options) {
+      var _ref, _ref1;
       if (options == null) {
         options = {};
       }
+      this.uploadFileUsingFlash = __bind(this.uploadFileUsingFlash, this);
+
       this.uploadError = __bind(this.uploadError, this);
 
       this.uploadComplete = __bind(this.uploadComplete, this);
@@ -31,6 +34,16 @@
       this.chunkProgress = {};
       this.eventListeners = {};
       this.initializeListeners(options);
+      this.uploaderType = (_ref = options != null ? options.uploaderType : void 0) != null ? _ref : "HTML5";
+      if ((_ref1 = this.uploaderType) !== "Flash" && _ref1 !== "HTML5") {
+        throw "uploaderType must be either HTML5 or Flash";
+      }
+      if (this.uploaderType === "Flash") {
+        if ((options != null ? options.swfUploader : void 0) == null) {
+          throw new Error("a reference to the SWFUpload object is required for Flash uploads");
+        }
+        this.swfUploader = options.swfUploader;
+      }
     }
 
     OoyalaUploader.prototype.initializeListeners = function(options) {
@@ -51,7 +64,7 @@
 
     OoyalaUploader.prototype.on = function(eventType, eventListener) {
       if (this.eventListeners[eventType] == null) {
-        throw "invalid eventType";
+        throw new Error("invalid eventType");
       }
       return this.eventListeners[eventType].push(eventListener);
     };
@@ -74,20 +87,21 @@
     };
 
     OoyalaUploader.prototype.uploadFile = function(file, options) {
-      var ooyalaUploader;
+      var movieUploader;
       if (options == null) {
         options = {};
       }
-      if (!this.browserSupported) {
+      if (!this.html5UploadSupported) {
         return false;
       }
-      ooyalaUploader = new MovieUploader({
+      movieUploader = new MovieUploader({
         embedCodeReady: this.embedCodeReady,
         uploadProgress: this.uploadProgress,
         uploadComplete: this.uploadComplete,
-        uploadError: this.uploadError
+        uploadError: this.uploadError,
+        uploaderType: this.uploaderType
       });
-      ooyalaUploader.uploadFile(file, options);
+      movieUploader.uploadFile(file, options);
       return true;
     };
 
@@ -141,7 +155,27 @@
       return _results;
     };
 
-    OoyalaUploader.prototype.browserSupported = typeof FileReader !== "undefined" && FileReader !== null;
+    OoyalaUploader.prototype.uploadFileUsingFlash = function(options) {
+      var movieUploader;
+      if (options == null) {
+        options = {};
+      }
+      if (this.uploaderType !== "Flash") {
+        throw new Error("uploaderType must be Flash to call this method");
+      }
+      movieUploader = new MovieUploader({
+        embedCodeReady: this.embedCodeReady,
+        uploadProgress: this.uploadProgress,
+        uploadComplete: this.uploadComplete,
+        uploadError: this.uploadError,
+        uploaderType: this.uploaderType,
+        swfUploader: this.swfUploader
+      });
+      movieUploader.uploadFileUsingFlash(options);
+      return true;
+    };
+
+    OoyalaUploader.prototype.html5UploadSupported = typeof FileReader !== "undefined" && FileReader !== null;
 
     return OoyalaUploader;
 
@@ -158,19 +192,37 @@
 
       this.onChunkProgress = __bind(this.onChunkProgress, this);
 
+      this.onFlashUploadError = __bind(this.onFlashUploadError, this);
+
+      this.onFlashUploadComplete = __bind(this.onFlashUploadComplete, this);
+
+      this.onFlashUploadProgress = __bind(this.onFlashUploadProgress, this);
+
+      this.startFlashUpload = __bind(this.startFlashUpload, this);
+
+      this.startHTML5Upload = __bind(this.startHTML5Upload, this);
+
       this.onUploadUrlsReceived = __bind(this.onUploadUrlsReceived, this);
 
       this.onAssetCreated = __bind(this.onAssetCreated, this);
 
       this.createAsset = __bind(this.createAsset, this);
 
+      this.setAssetMetadata = __bind(this.setAssetMetadata, this);
+
+      this.uploadFileUsingFlash = __bind(this.uploadFileUsingFlash, this);
+
       this.uploadFile = __bind(this.uploadFile, this);
 
-      var _ref, _ref1, _ref2, _ref3;
+      var _ref, _ref1, _ref2, _ref3, _ref4;
       this.embedCodeReadyCallback = (_ref = options != null ? options.embedCodeReady : void 0) != null ? _ref : function() {};
       this.uploadProgressCallback = (_ref1 = options != null ? options.uploadProgress : void 0) != null ? _ref1 : function() {};
       this.uploadCompleteCallback = (_ref2 = options != null ? options.uploadComplete : void 0) != null ? _ref2 : function() {};
       this.uploadErrorCallback = (_ref3 = options != null ? options.uploadError : void 0) != null ? _ref3 : function() {};
+      this.uploaderType = (_ref4 = options != null ? options.uploaderType : void 0) != null ? _ref4 : "HTML5";
+      if (this.uploaderType === "Flash") {
+        this.swfUploader = options.swfUploader;
+      }
       this.chunkUploaders = {};
       this.completedChunkIndexes = [];
       this.completedChunks = 0;
@@ -185,42 +237,74 @@
 
 
     MovieUploader.prototype.uploadFile = function(file, options) {
-      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+      var _base, _ref;
+      this.file = file;
       console.log("Uploading file using browser: " + navigator.userAgent);
-      this.assetMetadata = {
+      this.setAssetMetadata(options);
+      if ((_ref = (_base = this.assetMetadata).assetName) == null) {
+        _base.assetName = this.file.name;
+      }
+      this.assetMetadata.fileSize = this.file.size;
+      this.assetMetadata.fileName = this.file.name;
+      return this.createAsset();
+    };
+
+    MovieUploader.prototype.uploadFileUsingFlash = function(options) {
+      var file, _base, _ref;
+      file = this.swfUploader.getFile(0);
+      if (file == null) {
+        throw new Error("Flash Upload: No Files Queued");
+      }
+      this.setAssetMetadata(options);
+      if ((_ref = (_base = this.assetMetadata).assetName) == null) {
+        _base.assetName = file.name;
+      }
+      this.assetMetadata.fileSize = file.size;
+      this.assetMetadata.fileName = file.name;
+      this.swfUploader.settings["upload_success_handler"] = this.onFlashUploadSuccess;
+      this.swfUploader.settings["upload_progress_handler"] = this.onFlashUploadProgress;
+      this.swfUploader.settings["upload_error_handler"] = this.onFlashUploadError;
+      return this.createAsset();
+    };
+
+    MovieUploader.prototype.setAssetMetadata = function(options) {
+      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8;
+      return this.assetMetadata = {
         assetCreationUrl: (_ref = options.assetCreationUrl) != null ? _ref : "/v2/assets",
         assetUploadingUrl: (_ref1 = options.assetUploadingUrl) != null ? _ref1 : "/v2/assets/assetID/uploading_urls",
         assetStatusUpdateUrl: (_ref2 = options.assetStatusUpdateUrl) != null ? _ref2 : "/v2/assets/assetID/upload_status",
-        assetName: (_ref3 = options.name) != null ? _ref3 : file.name,
-        assetDescription: (_ref4 = options.description) != null ? _ref4 : "",
-        assetType: (_ref5 = options.assetType) != null ? _ref5 : "video",
-        fileSize: file.size,
+        assetName: options.name,
+        assetDescription: (_ref3 = options.description) != null ? _ref3 : "",
+        assetType: (_ref4 = options.assetType) != null ? _ref4 : "video",
         createdAt: new Date().getTime(),
-        assetLabels: (_ref6 = options.labels) != null ? _ref6 : [],
-        postProcessingStatus: (_ref7 = options.postProcessingStatus) != null ? _ref7 : "live",
-        labelCreationUrl: (_ref8 = options.labelCreationUrl) != null ? _ref8 : "/v2/labels/by_full_path/paths",
-        labelAssignmentUrl: (_ref9 = options.labelAssignmentUrl) != null ? _ref9 : "/v2/assets/assetID/labels",
+        assetLabels: (_ref5 = options.labels) != null ? _ref5 : [],
+        postProcessingStatus: (_ref6 = options.postProcessingStatus) != null ? _ref6 : "live",
+        labelCreationUrl: (_ref7 = options.labelCreationUrl) != null ? _ref7 : "/v2/labels/by_full_path/paths",
+        labelAssignmentUrl: (_ref8 = options.labelAssignmentUrl) != null ? _ref8 : "/v2/assets/assetID/labels",
         assetID: ""
       };
-      return this.createAsset(file);
     };
 
-    MovieUploader.prototype.createAsset = function(file) {
-      var _this = this;
+    MovieUploader.prototype.createAsset = function() {
+      var postData,
+        _this = this;
+      postData = {
+        name: this.assetMetadata.assetName,
+        description: this.assetMetadata.assetDescription,
+        file_name: this.assetMetadata.fileName,
+        file_size: this.assetMetadata.fileSize,
+        asset_type: this.assetMetadata.assetType,
+        post_processing_status: this.assetMetadata.postProcessingStatus
+      };
+      if (this.uploaderType === "HTML5") {
+        postData.chunk_size = CHUNK_SIZE;
+      }
       return jQuery.ajax({
         url: this.assetMetadata.assetCreationUrl,
         type: "POST",
-        data: {
-          name: this.assetMetadata.assetName,
-          description: this.assetMetadata.assetDescription,
-          file_name: file.name,
-          file_size: this.assetMetadata.fileSize,
-          asset_type: this.assetMetadata.assetType,
-          chunk_size: CHUNK_SIZE,
-          post_processing_status: this.assetMetadata.postProcessingStatus
-        },
+        data: postData,
         success: function(response) {
-          return _this.onAssetCreated(file, response);
+          return _this.onAssetCreated(response);
         },
         error: function(response) {
           return _this.onError(response, "Asset creation error");
@@ -228,7 +312,7 @@
       });
     };
 
-    MovieUploader.prototype.onAssetCreated = function(file, assetCreationResponse) {
+    MovieUploader.prototype.onAssetCreated = function(assetCreationResponse) {
       var parsedResponse;
       parsedResponse = JSON.parse(assetCreationResponse);
       this.assetMetadata.assetID = parsedResponse.embed_code;
@@ -244,7 +328,7 @@
       if (this.assetMetadata.assetLabels.length !== 0) {
         this.createLabels();
       }
-      return this.getUploadingUrls(file);
+      return this.getUploadingUrls();
     };
 
     MovieUploader.prototype.createLabels = function() {
@@ -293,7 +377,7 @@
       return console.log("Creation and assignment of labels complete " + this.assetMetadata.assetLabels);
     };
 
-    MovieUploader.prototype.getUploadingUrls = function(file) {
+    MovieUploader.prototype.getUploadingUrls = function() {
       var _this = this;
       return jQuery.ajax({
         url: this.assetMetadata.assetUploadingUrl.split("assetID").join(this.assetMetadata.assetID),
@@ -301,7 +385,7 @@
           asset_id: this.assetMetadata.assetID
         },
         success: function(response) {
-          return _this.onUploadUrlsReceived(file, response);
+          return _this.onUploadUrlsReceived(response);
         },
         error: function(response) {
           return _this.onError(response, "Error getting the uploading urls");
@@ -314,12 +398,21 @@
     */
 
 
-    MovieUploader.prototype.onUploadUrlsReceived = function(file, uploadingUrlsResponse) {
-      var chunks, parsedUploadingUrl,
-        _this = this;
+    MovieUploader.prototype.onUploadUrlsReceived = function(uploadingUrlsResponse) {
+      var parsedUploadingUrl;
       parsedUploadingUrl = JSON.parse(uploadingUrlsResponse);
       this.totalChunks = parsedUploadingUrl.length;
-      chunks = new FileSplitter(file, CHUNK_SIZE).getChunks();
+      if (this.uploaderType === "HTML5") {
+        return this.startHTML5Upload(parsedUploadingUrl);
+      } else {
+        return this.startFlashUpload(parsedUploadingUrl);
+      }
+    };
+
+    MovieUploader.prototype.startHTML5Upload = function(parsedUploadingUrl) {
+      var chunks,
+        _this = this;
+      chunks = new FileSplitter(this.file, CHUNK_SIZE).getChunks();
       if (chunks.length !== this.totalChunks) {
         console.log("Sliced chunks (" + chunks.length + ") and uploadingUrls (" + this.totalChunks + ") disagree.");
       }
@@ -339,6 +432,32 @@
         });
         _this.chunkUploaders[index] = chunkUploader;
         return chunkUploader.startUpload();
+      });
+    };
+
+    MovieUploader.prototype.startFlashUpload = function(parsedUploadingUrl) {
+      this.swfUploader.setUploadURL(parsedUploadingUrl[0]);
+      return this.swfUploader.startUpload();
+    };
+
+    MovieUploader.prototype.onFlashUploadProgress = function(file, completedBytes, totalBytes) {
+      var uploadedPercent;
+      uploadedPercent = Math.floor((completedBytes * 100) / totalBytes);
+      uploadedPercent = Math.min(100, uploadedPercent);
+      return this.uploadProgressCallback(this.assetMetadata.assetID, uploadedPercent);
+    };
+
+    MovieUploader.prototype.onFlashUploadComplete = function(file, serverData, receivedResponse) {
+      return this.onAssetUploadComplete();
+    };
+
+    MovieUploader.prototype.onFlashUploadError = function(file, errorCode, errorMessage) {
+      return this.uploadErrorCallback({
+        assetID: this.assetMetadata.assetID,
+        type: this.assetMetadata.assetType,
+        fileName: this.assetMetadata.assetName,
+        statusCode: errorCode,
+        message: errorMessage
       });
     };
 
