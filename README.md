@@ -16,8 +16,9 @@ programming interface (API). It supports two ways to upload video files:
 
 * Single-chunk upload using a Flash SWF
 
-    For older browsers that do not support the File API, the library uses a flash swf from the
+    For older browsers that do not support the File API, the library uses a Flash swf from the
     [swfUpload](http://code.google.com/p/swfupload/) library to upload the file in a single chunk.
+    The library supports browsers with Flash version 9 or greater.
 
 ## Reference
 
