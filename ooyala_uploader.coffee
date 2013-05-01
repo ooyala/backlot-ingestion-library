@@ -112,7 +112,7 @@ class MovieUploader
     @assetMetadata.assetName ?= file.name
     @assetMetadata.fileSize = file.size
     @assetMetadata.fileName = file.name
-    @swfUploader.settings["upload_success_handler"] = @onFlashUploadSuccess
+    @swfUploader.settings["upload_success_handler"] = @onFlashUploadComplete
     @swfUploader.settings["upload_progress_handler"] = @onFlashUploadProgress
     @swfUploader.settings["upload_error_handler"] = @onFlashUploadError
     @createAsset()

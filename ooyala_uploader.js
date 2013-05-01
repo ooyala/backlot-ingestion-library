@@ -261,7 +261,7 @@
       }
       this.assetMetadata.fileSize = file.size;
       this.assetMetadata.fileName = file.name;
-      this.swfUploader.settings["upload_success_handler"] = this.onFlashUploadSuccess;
+      this.swfUploader.settings["upload_success_handler"] = this.onFlashUploadComplete;
       this.swfUploader.settings["upload_progress_handler"] = this.onFlashUploadProgress;
       this.swfUploader.settings["upload_error_handler"] = this.onFlashUploadError;
       return this.createAsset();
