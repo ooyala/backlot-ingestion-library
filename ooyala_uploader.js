@@ -303,6 +303,7 @@
         url: this.assetMetadata.assetCreationUrl,
         type: "POST",
         data: postData,
+        dataType: "json",
         success: function(response) {
           return _this.onAssetCreated(response);
         },
@@ -313,9 +314,7 @@
     };
 
     MovieUploader.prototype.onAssetCreated = function(assetCreationResponse) {
-      var parsedResponse;
-      parsedResponse = JSON.parse(assetCreationResponse);
-      this.assetMetadata.assetID = parsedResponse.embed_code;
+      this.assetMetadata.assetID = assetCreationResponse.embed_code;
       /*
           Note: It could take some time for the asset to be copied. Send the upload ready callback
           immediately so that the user has some UI indication that upload has started
@@ -338,6 +337,7 @@
       return jQuery.ajax({
         url: this.assetMetadata.labelCreationUrl.replace("paths", listOfLabels),
         type: "POST",
+        dataType: "json",
         success: function(response) {
           return _this.assignLabels(response);
         },
@@ -348,14 +348,13 @@
     };
 
     MovieUploader.prototype.assignLabels = function(responseCreationLabels) {
-      var label, labelIds, parsedLabelsResponse,
+      var label, labelIds,
         _this = this;
-      parsedLabelsResponse = JSON.parse(responseCreationLabels);
       labelIds = (function() {
         var _i, _len, _results;
         _results = [];
-        for (_i = 0, _len = parsedLabelsResponse.length; _i < _len; _i++) {
-          label = parsedLabelsResponse[_i];
+        for (_i = 0, _len = responseCreationLabels.length; _i < _len; _i++) {
+          label = responseCreationLabels[_i];
           _results.push(label["id"]);
         }
         return _results;
@@ -364,6 +363,7 @@
         url: this.assetMetadata.labelAssignmentUrl.replace("assetID", this.assetMetadata.assetID),
         type: "POST",
         data: JSON.stringify(labelIds),
+        dataType: "json",
         success: function(response) {
           return _this.onLabelsAssigned(response);
         },
@@ -384,6 +384,7 @@
         data: {
           asset_id: this.assetMetadata.assetID
         },
+        dataType: "json",
         success: function(response) {
           return _this.onUploadUrlsReceived(response);
         },
@@ -399,13 +400,11 @@
 
 
     MovieUploader.prototype.onUploadUrlsReceived = function(uploadingUrlsResponse) {
-      var parsedUploadingUrl;
-      parsedUploadingUrl = JSON.parse(uploadingUrlsResponse);
-      this.totalChunks = parsedUploadingUrl.length;
+      this.totalChunks = uploadingUrlsResponse.length;
       if (this.uploaderType === "HTML5") {
-        return this.startHTML5Upload(parsedUploadingUrl);
+        return this.startHTML5Upload(uploadingUrlsResponse);
       } else {
-        return this.startFlashUpload(parsedUploadingUrl);
+        return this.startFlashUpload(uploadingUrlsResponse);
       }
     };
 
@@ -500,6 +499,7 @@
           status: "uploaded"
         },
         type: "PUT",
+        dataType: "json",
         success: function(data) {
           return _this.uploadCompleteCallback(_this.assetMetadata.assetID);
         },
