@@ -86,6 +86,9 @@ The `uploadFile` method takes in a file reference and an options hash. The possi
 * **assetStatusUpdateUrl**: URL on your signing server to update asset’s upload status. Corresponding Backlot
   API is `[PUT] /v2/assets/assetID/upload_status`.  Default: `"/v2/assets/assetID/upload_status"`. The
   string assetID will be replaced for the actual id of the asset.
+* **assetUploadingUrl**: URL on your signing server to GET the asset's uploading URLs. Corresponding Backlot
+  API is `[GET] /v2/assets/assetID/uploading_urls`. Default: `"/v2/assets/assetID/uploading_urls"`. The
+  string assetID will be replaced for the actual ID of the asset.
 * **labelCreationUrl**: URL on your signing server for creating labels. Corresponding Backlot API is `[POST]
   /v2/labels/by_full_path/paths`. Default: `"/v2/labels/by_full_path/paths"`. The paths variable is a
   comma-delimited list of full path names for labels, including the leading slash, such as
