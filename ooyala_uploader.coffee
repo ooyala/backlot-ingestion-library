@@ -146,12 +146,12 @@ class MovieUploader
       url: @assetMetadata.assetCreationUrl
       type: "POST"
       data: postData
+      dataType: "json"
       success: (response) => @onAssetCreated(response)
       error: (response) => @onError(response, "Asset creation error")
 
   onAssetCreated: (assetCreationResponse) =>
-    parsedResponse = JSON.parse(assetCreationResponse)
-    @assetMetadata.assetID = parsedResponse.embed_code
+    @assetMetadata.assetID = assetCreationResponse.embed_code
     ###
     Note: It could take some time for the asset to be copied. Send the upload ready callback
     immediately so that the user has some UI indication that upload has started
@@ -166,16 +166,17 @@ class MovieUploader
     jQuery.ajax
       url: @assetMetadata.labelCreationUrl.replace("paths", listOfLabels)
       type: "POST"
+      dataType: "json"
       success: (response) => @assignLabels(response)
       error: (response) => @onError(response, "Label creation error")
 
   assignLabels: (responseCreationLabels) ->
-    parsedLabelsResponse = JSON.parse(responseCreationLabels)
-    labelIds = (label["id"] for label in parsedLabelsResponse)
+    labelIds = (label["id"] for label in responseCreationLabels)
     jQuery.ajax
       url: @assetMetadata.labelAssignmentUrl.replace("assetID", @assetMetadata.assetID)
       type: "POST"
       data: JSON.stringify(labelIds)
+      dataType: "json"
       success: (response) => @onLabelsAssigned(response)
       error: (response) => @onError(response, "Label assignment error")
 
@@ -187,6 +188,7 @@ class MovieUploader
       url: @assetMetadata.assetUploadingUrl.split("assetID").join(@assetMetadata.assetID)
       data:
         asset_id: @assetMetadata.assetID
+      dataType: "json"
       success: (response) =>
         @onUploadUrlsReceived(response)
       error: (response) =>
@@ -196,14 +198,13 @@ class MovieUploader
   Uploading all chunks
   ###
   onUploadUrlsReceived: (uploadingUrlsResponse) =>
-    parsedUploadingUrl = JSON.parse(uploadingUrlsResponse)
-    @totalChunks = parsedUploadingUrl.length
+    @totalChunks = uploadingUrlsResponse.length
     if @uploaderType is "HTML5"
-      @startHTML5Upload(parsedUploadingUrl)
+      @startHTML5Upload(uploadingUrlsResponse)
     else
-      @startFlashUpload(parsedUploadingUrl)
+      @startFlashUpload(uploadingUrlsResponse)
 
-  startHTML5Upload: (parsedUploadingUrl) =>
+  startHTML5Upload: (uploadingUrlsResponse) =>
     chunks = new FileSplitter(@file, CHUNK_SIZE).getChunks()
     if chunks.length isnt @totalChunks
       console.log("Sliced chunks (#{chunks.length}) and uploadingUrls (#{@totalChunks}) disagree.")
@@ -213,7 +214,7 @@ class MovieUploader
         assetMetadata: @assetMetadata
         chunkIndex: index
         chunk: chunk
-        uploadUrl: parsedUploadingUrl[index]
+        uploadUrl: uploadingUrlsResponse[index]
         progress: @onChunkProgress
         completed: @onChunkComplete
         error: @uploadErrorCallback
@@ -221,8 +222,8 @@ class MovieUploader
       chunkUploader.startUpload()
     )
 
-  startFlashUpload: (parsedUploadingUrl) =>
-    @swfUploader.setUploadURL(parsedUploadingUrl[0])
+  startFlashUpload: (uploadingUrlsResponse) =>
+    @swfUploader.setUploadURL(uploadingUrlsResponse[0])
     @swfUploader.startUpload()
 
   onFlashUploadProgress: (file, completedBytes, totalBytes) =>
@@ -266,6 +267,7 @@ class MovieUploader
       data:
         asset_id: @assetMetadata.assetID
         status: "uploaded"
+      dataType: "json"
       type: "PUT"
       success: (data) =>
         @uploadCompleteCallback(@assetMetadata.assetID)
@@ -274,8 +276,7 @@ class MovieUploader
 
   onError: (response, clientMessage) =>
     try
-      parsedResponse = JSON.parse(response.responseText)
-      errorMessage = parsedResponse["message"]
+      errorMessage = response["message"]
     catch _
       errorMessage = response.statusText
 
