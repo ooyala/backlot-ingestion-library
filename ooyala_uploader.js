@@ -279,6 +279,9 @@
         type: "POST",
         data: postData,
         dataType: "json",
+        dataFilter: function(data, type) {
+          return JSON.parse(data);
+        },
         success: function(response) {
           return _this.onAssetCreated(response);
         },
@@ -313,6 +316,9 @@
         url: this.assetMetadata.labelCreationUrl.replace("paths", listOfLabels),
         type: "POST",
         dataType: "json",
+        dataFilter: function(data, type) {
+          return JSON.parse(data);
+        },
         success: function(response) {
           return _this.assignLabels(response);
         },
@@ -339,6 +345,9 @@
         type: "POST",
         data: JSON.stringify(labelIds),
         dataType: "json",
+        dataFilter: function(data, type) {
+          return JSON.parse(data);
+        },
         success: function(response) {
           return _this.onLabelsAssigned(response);
         },
@@ -360,6 +369,9 @@
           asset_id: this.assetMetadata.assetID
         },
         dataType: "json",
+        dataFilter: function(data, type) {
+          return JSON.parse(data);
+        },
         success: function(response) {
           return _this.onUploadUrlsReceived(response);
         },
@@ -473,6 +485,9 @@
           status: "uploaded"
         },
         dataType: "json",
+        dataFilter: function(data, type) {
+          return JSON.parse(data);
+        },
         type: "PUT",
         success: function(data) {
           return _this.uploadCompleteCallback(_this.assetMetadata.assetID);

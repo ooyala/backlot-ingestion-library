@@ -147,6 +147,7 @@ class MovieUploader
       type: "POST"
       data: postData
       dataType: "json"
+      dataFilter: (data, type) => JSON.parse(data)
       success: (response) => @onAssetCreated(response)
       error: (response) => @onError(response, "Asset creation error")
 
@@ -167,6 +168,7 @@ class MovieUploader
       url: @assetMetadata.labelCreationUrl.replace("paths", listOfLabels)
       type: "POST"
       dataType: "json"
+      dataFilter: (data, type) => JSON.parse(data)
       success: (response) => @assignLabels(response)
       error: (response) => @onError(response, "Label creation error")
 
@@ -177,6 +179,7 @@ class MovieUploader
       type: "POST"
       data: JSON.stringify(labelIds)
       dataType: "json"
+      dataFilter: (data, type) => JSON.parse(data)
       success: (response) => @onLabelsAssigned(response)
       error: (response) => @onError(response, "Label assignment error")
 
@@ -189,6 +192,7 @@ class MovieUploader
       data:
         asset_id: @assetMetadata.assetID
       dataType: "json"
+      dataFilter: (data, type) => JSON.parse(data)
       success: (response) =>
         @onUploadUrlsReceived(response)
       error: (response) =>
@@ -268,6 +272,7 @@ class MovieUploader
         asset_id: @assetMetadata.assetID
         status: "uploaded"
       dataType: "json"
+      dataFilter: (data, type) => JSON.parse(data)
       type: "PUT"
       success: (data) =>
         @uploadCompleteCallback(@assetMetadata.assetID)
