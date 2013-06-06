@@ -168,9 +168,16 @@
 
     OoyalaUploader.prototype.html5UploadSupported = typeof FileReader !== "undefined" && FileReader !== null;
 
+    OoyalaUploader.jsonParsePolyfill = function(data) {
+      if (jQuery.fn.jquery < "1.5") {
+        return JSON.parse(data);
+      }
+      return data;
+    };
+
     return OoyalaUploader;
 
-  })();
+  }).call(this);
 
   MovieUploader = (function() {
     function MovieUploader(options) {
@@ -280,7 +287,7 @@
         data: JSON.stringify(postData),
         dataType: "json",
         dataFilter: function(data, type) {
-          return JSON.parse(data);
+          return OoyalaUploader.jsonParsePolyfill(data);
         },
         contentType: 'application/json; charset=UTF-8',
         success: function(response) {
@@ -318,7 +325,7 @@
         type: "POST",
         dataType: "json",
         dataFilter: function(data, type) {
-          return JSON.parse(data);
+          return OoyalaUploader.jsonParsePolyfill(data);
         },
         contentType: 'application/json; charset=UTF-8',
         success: function(response) {
@@ -345,10 +352,10 @@
       return jQuery.ajax({
         url: this.assetMetadata.labelAssignmentUrl.replace("assetID", this.assetMetadata.assetID),
         type: "POST",
-        data: JSON.stringify(labelIds),
+        data: OoyalaUploader.jsonParsePollyfill(labelIds),
         dataType: "json",
         dataFilter: function(data, type) {
-          return JSON.parse(data);
+          return OoyalaUploader.jsonParsePolyfill(data);
         },
         contentType: 'application/json; charset=UTF-8',
         success: function(response) {
@@ -373,7 +380,7 @@
         },
         dataType: "json",
         dataFilter: function(data, type) {
-          return JSON.parse(data);
+          return OoyalaUploader.jsonParsePolyfill(data);
         },
         contentType: 'application/json; charset=UTF-8',
         success: function(response) {
@@ -490,7 +497,7 @@
         }),
         dataType: "json",
         dataFilter: function(data, type) {
-          return JSON.parse(data);
+          return OoyalaUploader.jsonParsePolyfill(data);
         },
         contentType: 'application/json; charset=UTF-8',
         type: "PUT",
