@@ -145,9 +145,10 @@ class MovieUploader
     jQuery.ajax
       url: @assetMetadata.assetCreationUrl
       type: "POST"
-      data: postData
+      data: JSON.stringify(postData)
       dataType: "json"
       dataFilter: (data, type) => JSON.parse(data)
+      contentType: 'application/json; charset=UTF-8'
       success: (response) => @onAssetCreated(response)
       error: (response) => @onError(response, "Asset creation error")
 
@@ -169,6 +170,7 @@ class MovieUploader
       type: "POST"
       dataType: "json"
       dataFilter: (data, type) => JSON.parse(data)
+      contentType: 'application/json; charset=UTF-8'
       success: (response) => @assignLabels(response)
       error: (response) => @onError(response, "Label creation error")
 
@@ -180,6 +182,7 @@ class MovieUploader
       data: JSON.stringify(labelIds)
       dataType: "json"
       dataFilter: (data, type) => JSON.parse(data)
+      contentType: 'application/json; charset=UTF-8'
       success: (response) => @onLabelsAssigned(response)
       error: (response) => @onError(response, "Label assignment error")
 
@@ -193,6 +196,7 @@ class MovieUploader
         asset_id: @assetMetadata.assetID
       dataType: "json"
       dataFilter: (data, type) => JSON.parse(data)
+      contentType: 'application/json; charset=UTF-8'
       success: (response) =>
         @onUploadUrlsReceived(response)
       error: (response) =>
@@ -268,11 +272,13 @@ class MovieUploader
   onAssetUploadComplete: =>
     jQuery.ajax
       url: @assetMetadata.assetStatusUpdateUrl.split("assetID").join(@assetMetadata.assetID)
-      data:
+      data: JSON.stringify(
         asset_id: @assetMetadata.assetID
         status: "uploaded"
+        )
       dataType: "json"
       dataFilter: (data, type) => JSON.parse(data)
+      contentType: 'application/json; charset=UTF-8'
       type: "PUT"
       success: (data) =>
         @uploadCompleteCallback(@assetMetadata.assetID)
